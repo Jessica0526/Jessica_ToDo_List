@@ -1,125 +1,99 @@
 import { defineStore } from 'pinia'
-import { ref, computed, watch } from 'vue'
-import { ElMessage } from 'element-plus'
+import { ref, computed } from 'vue'
 
 export const useTodoStore = defineStore('todo', () => {
-    const todos = ref([])
+    // 从 localStorage 加载初始数据
+    const loadTodosFromStorage = () => {
+        const saved = localStorage.getItem('todo-app-todos')
+        return saved ? JSON.parse(saved) : []
+    }
+
+    // 保存数据到 localStorage
+    const saveTodosToStorage = (todos) => {
+        localStorage.setItem('todo-app-todos', JSON.stringify(todos))
+    }
+
+    // 状态
+    const todos = ref(loadTodosFromStorage())
     const searchQuery = ref('')
     const filterStatus = ref('all')
 
-    // 从LocalStorage加载数据
-    const loadFromStorage = () => {
-        try {
-            const data = localStorage.getItem('vue-todo-app')
-            if (data) {
-                todos.value = JSON.parse(data)
-            }
-        } catch (error) {
-            ElMessage.error('加载数据失败')
-        }
-    }
+    // 计算属性 - 统计数据
+    const stats = computed(() => {
+        const total = todos.value.length
+        const completed = todos.value.filter(todo => todo.completed).length
+        const active = total - completed
+        return { total, completed, active }
+    })
 
-    // 保存到LocalStorage
-    const saveToStorage = () => {
-        try {
-            localStorage.setItem('vue-todo-app', JSON.stringify(todos.value))
-        } catch (error) {
-            ElMessage.error('保存数据失败')
-        }
-    }
-
-    // 初始化加载数据
-    loadFromStorage()
-
-    // 监听todos变化自动保存
-    watch(todos, saveToStorage, { deep: true })
-
-    // 添加待办事项
-    const addTodo = (title, description = '') => {
-        if (!title.trim()) {
-            ElMessage.warning('请输入待办事项标题')
-            return
-        }
-
-        const newTodo = {
-            id: Date.now().toString(),
-            title: title.trim(),
-            description: description.trim(),
-            completed: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString()
-        }
-
-        todos.value.unshift(newTodo)
-        ElMessage.success('添加成功')
-    }
-
-    // 删除待办事项
-    const deleteTodo = (id) => {
-        const index = todos.value.findIndex(todo => todo.id === id)
-        if (index !== -1) {
-            todos.value.splice(index, 1)
-            ElMessage.success('删除成功')
-        }
-    }
-
-    // 切换完成状态
-    const toggleTodo = (id) => {
-        const todo = todos.value.find(todo => todo.id === id)
-        if (todo) {
-            todo.completed = !todo.completed
-            todo.updatedAt = new Date().toISOString()
-        }
-    }
-
-    // 批量删除已完成
-    const clearCompleted = () => {
-        const completedCount = todos.value.filter(todo => todo.completed).length
-        todos.value = todos.value.filter(todo => !todo.completed)
-        if (completedCount > 0) {
-            ElMessage.success(`已清除 ${completedCount} 个已完成事项`)
-        }
-    }
-
-    // 过滤后的待办事项
+    // 计算属性 - 过滤后的待办事项
     const filteredTodos = computed(() => {
         let filtered = todos.value
 
-        // 状态过滤
+        // 根据状态筛选
         if (filterStatus.value === 'active') {
             filtered = filtered.filter(todo => !todo.completed)
         } else if (filterStatus.value === 'completed') {
             filtered = filtered.filter(todo => todo.completed)
         }
 
-        // 搜索过滤
+        // 根据搜索词筛选
         if (searchQuery.value.trim()) {
-            const query = searchQuery.value.toLowerCase().trim()
+            const query = searchQuery.value.toLowerCase()
             filtered = filtered.filter(todo =>
                 todo.title.toLowerCase().includes(query) ||
-                todo.description.toLowerCase().includes(query)
+                (todo.description && todo.description.toLowerCase().includes(query))
             )
         }
 
         return filtered
     })
 
-    // 统计数据
-    const stats = computed(() => ({
-        total: todos.value.length,
-        active: todos.value.filter(todo => !todo.completed).length,
-        completed: todos.value.filter(todo => todo.completed).length
-    }))
+    // Actions
+    const addTodo = (title, description = '') => {
+        const newTodo = {
+            id: Date.now().toString(),
+            title: title.trim(),
+            description: description.trim(),
+            completed: false,
+            createdAt: new Date().toISOString()
+        }
 
+        todos.value.unshift(newTodo)
+        saveTodosToStorage(todos.value)
+    }
+
+    const deleteTodo = (id) => {
+        const index = todos.value.findIndex(todo => todo.id === id)
+        if (index !== -1) {
+            todos.value.splice(index, 1)
+            saveTodosToStorage(todos.value)
+        }
+    }
+
+    const toggleTodo = (id) => {
+        const todo = todos.value.find(todo => todo.id === id)
+        if (todo) {
+            todo.completed = !todo.completed
+            saveTodosToStorage(todos.value)
+        }
+    }
+
+    const clearCompleted = () => {
+        todos.value = todos.value.filter(todo => !todo.completed)
+        saveTodosToStorage(todos.value)
+    }
+
+    // 导出
     return {
         todos,
         searchQuery,
         filterStatus,
+        stats,
+        filteredTodos,
         addTodo,
         deleteTodo,
         toggleTodo,
-        clearCompleted,
-        filteredTodos,
-        stats
+        clearCompleted
     }
 })
