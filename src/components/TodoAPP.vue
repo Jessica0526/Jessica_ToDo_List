@@ -35,69 +35,135 @@
 
           <!-- 搜索和过滤 -->
           <div class="filter-section">
-            <div class="filter-row">
-              <el-input
-                v-model="todoStore.searchQuery"
-                placeholder="搜索任务..."
-                :prefix-icon="Search"
-                clearable
-                class="search-input"
-                size="large"
-              />
-              <el-select
-                v-model="todoStore.filterStatus"
-                placeholder="状态筛选"
-                class="filter-select"
-                size="large"
-              >
-                <el-option label="全部" value="all" />
-                <el-option label="进行中" value="active" />
-                <el-option label="已完成" value="completed" />
-              </el-select>
-              <el-button
-                type="default"
-                :disabled="todoStore.stats.completed === 0"
-                @click="handleClearCompleted"
-                :icon="Delete"
-                class="clear-btn"
-                size="large"
-              >
-                清除已完成
-              </el-button>
+            <div class="filter-controls">
+              <div class="filter-row">
+                <el-input
+                  v-model="todoStore.searchQuery"
+                  placeholder="搜索任务..."
+                  :prefix-icon="Search"
+                  clearable
+                  class="search-input"
+                  size="large"
+                />
+                <el-select
+                  v-model="todoStore.filterStatus"
+                  placeholder="状态筛选"
+                  class="filter-select"
+                  size="large"
+                >
+                  <el-option label="全部状态" value="all" />
+                  <el-option label="进行中" value="active" />
+                  <el-option label="已完成" value="completed" />
+                </el-select>
+                <el-select
+                  v-model="todoStore.filterCategory"
+                  placeholder="分类筛选"
+                  class="filter-select"
+                  size="large"
+                >
+                  <el-option label="全部分类" value="all" />
+                  <el-option 
+                    v-for="category in todoStore.categories"
+                    :key="category.value"
+                    :label="category.label"
+                    :value="category.value"
+                  />
+                </el-select>
+                <el-select
+                  v-model="todoStore.sortBy"
+                  placeholder="排序方式"
+                  class="filter-select"
+                  size="large"
+                >
+                  <el-option label="最新创建" value="createdAt" />
+                  <el-option label="优先级" value="priority" />
+                  <el-option label="截止日期" value="dueDate" />
+                </el-select>
+                <el-button
+                  type="danger"
+                  :disabled="todoStore.stats.completed === 0"
+                  @click="handleClearCompleted"
+                  :icon="Delete"
+                  class="clear-btn"
+                  size="large"
+                >
+                  清除已完成
+                </el-button>
+              </div>
             </div>
           </div>
 
           <!-- 添加新任务 -->
           <div class="add-section">
             <div class="add-form">
-              <el-input
-                v-model="newTodoTitle"
-                placeholder="添加新任务..."
-                @keyup.enter="handleAddTodo"
-                class="title-input"
-                size="large"
-              >
-                <template #append>
-                  <el-button 
-                    type="primary" 
-                    :icon="Plus" 
-                    @click="handleAddTodo"
-                    :disabled="!newTodoTitle.trim()"
-                    class="add-btn"
-                    size="large"
+              <div class="form-row">
+                <el-input
+                  v-model="newTodoTitle"
+                  placeholder="添加新任务..."
+                  @keyup.enter="handleAddTodo"
+                  class="title-input"
+                  size="large"
+                >
+                  <template #append>
+                    <el-button 
+                      type="primary" 
+                      :icon="Plus" 
+                      @click="handleAddTodo"
+                      :disabled="!newTodoTitle.trim()"
+                      class="add-btn"
+                      size="large"
+                    >
+                      添加
+                    </el-button>
+                  </template>
+                </el-input>
+              </div>
+              <div class="form-row">
+                <el-input
+                  v-model="newTodoDescription"
+                  type="textarea"
+                  :rows="2"
+                  placeholder="任务描述（可选）..."
+                  resize="none"
+                  class="desc-input"
+                />
+              </div>
+              <div class="form-row">
+                <div class="form-options">
+                  <el-select
+                    v-model="newTodoCategory"
+                    placeholder="选择分类"
+                    class="option-select"
                   >
-                    添加
-                  </el-button>
-                </template>
-              </el-input>
-              <el-input
-                v-model="newTodoDescription"
-                type="textarea"
-                :rows="3"
-                placeholder="任务描述（可选）..."
-                resize="none"
-                class="desc-input"
-              />
+                    <el-option 
+                      v-for="category in todoStore.categories"
+                      :key="category.value"
+                      :label="category.label"
+                      :value="category.value"
+                    />
+                  </el-select>
+                  <el-select
+                    v-model="newTodoPriority"
+                    placeholder="选择优先级"
+                    class="option-select"
+                  >
+                    <el-option 
+                      v-for="priority in todoStore.priorities"
+                      :key="priority.value"
+                      :label="priority.label"
+                      :value="priority.value"
+                    />
+                  </el-select>
+                  <el-date-picker
+                    v-model="newTodoDueDate"
+                    type="datetime"
+                    placeholder="截止日期"
+                    format="YYYY-MM-DD HH:mm"
+                    value-format="YYYY-MM-DDTHH:mm:ss"
+                    class="date-picker"
+                  />
+                </div>
+              </div>
             </div>
           </div>
 
@@ -118,16 +184,32 @@
               >
                 <div class="todo-content">
                   <el-checkbox
-                    v-model="todo.completed"
-                    @change="() => todoStore.toggleTodo(todo.id)"
+                    :model-value="todo.completed"
+                    @change="(value) => handleToggleTodo(todo.id, value)"
                     class="todo-checkbox"
                     size="large"
                   />
                   <div class="todo-text">
-                    <div 
-                      :class="['todo-title', { 'completed': todo.completed }]"
-                    >
-                      {{ todo.title }}
+                    <div class="todo-header">
+                      <div 
+                        :class="['todo-title', { 'completed': todo.completed }]"
+                      >
+                        {{ todo.title }}
+                      </div>
+                      <div class="todo-badges">
+                        <span 
+                          class="category-badge"
+                          :style="{ backgroundColor: getCategoryColor(todo.category) }"
+                        >
+                          {{ getCategoryLabel(todo.category) }}
+                        </span>
+                        <span 
+                          class="priority-badge"
+                          :style="{ color: getPriorityColor(todo.priority) }"
+                        >
+                          {{ getPriorityLabel(todo.priority) }}
+                        </span>
+                      </div>
                     </div>
                     <div 
                       v-if="todo.description"
@@ -136,7 +218,10 @@
                       {{ todo.description }}
                     </div>
                     <div class="todo-meta">
-                      {{ formatDate(todo.createdAt) }}
+                      <span>创建: {{ formatDate(todo.createdAt) }}</span>
+                      <span v-if="todo.dueDate" class="due-date">
+                        截止: {{ formatDate(todo.dueDate) }}
+                      </span>
                     </div>
                   </div>
                   <div class="todo-actions">
@@ -167,12 +252,25 @@ import { Search, Delete, Plus, List } from '@element-plus/icons-vue'
 const todoStore = useTodoStore()
 const newTodoTitle = ref('')
 const newTodoDescription = ref('')
+const newTodoCategory = ref('work')
+const newTodoPriority = ref('medium')
+const newTodoDueDate = ref('')
 
 const handleAddTodo = () => {
   if (newTodoTitle.value.trim()) {
-    todoStore.addTodo(newTodoTitle.value, newTodoDescription.value)
+    todoStore.addTodo(
+      newTodoTitle.value, 
+      newTodoDescription.value,
+      newTodoCategory.value,
+      newTodoPriority.value,
+      newTodoDueDate.value
+    )
+    // 重置表单
     newTodoTitle.value = ''
     newTodoDescription.value = ''
+    newTodoDueDate.value = ''
+    
+    ElMessage.success('任务添加成功')
   }
 }
 
@@ -188,6 +286,7 @@ const handleDeleteTodo = async (id) => {
       }
     )
     todoStore.deleteTodo(id)
+    ElMessage.success('任务删除成功')
   } catch {
     // 用户取消删除
   }
@@ -205,6 +304,7 @@ const handleClearCompleted = async () => {
       }
     )
     todoStore.clearCompleted()
+    ElMessage.success('已清除已完成任务')
   } catch {
     // 用户取消清除
   }
@@ -218,6 +318,30 @@ const formatDate = (dateString) => {
     minute: '2-digit'
   })
 }
+
+const getCategoryLabel = (categoryValue) => {
+  const category = todoStore.categories.find(cat => cat.value === categoryValue)
+  return category ? category.label : '其他'
+}
+
+const getCategoryColor = (categoryValue) => {
+  const category = todoStore.categories.find(cat => cat.value === categoryValue)
+  return category ? category.color : '#96CEB4'
+}
+
+const getPriorityLabel = (priorityValue) => {
+  const priority = todoStore.priorities.find(pri => pri.value === priorityValue)
+  return priority ? priority.label : '中优先级'
+}
+
+const getPriorityColor = (priorityValue) => {
+  const priority = todoStore.priorities.find(pri => pri.value === priorityValue)
+  return priority ? priority.color : '#FFA502'
+}
+
+const handleToggleTodo = (id, value) => {
+  todoStore.toggleTodo(id)
+}
 </script>
 
 <style scoped lang="scss">
@@ -229,7 +353,7 @@ const formatDate = (dateString) => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  font-size: 16px; // 基础字体大小
+  font-size: 18px; /* 基础字体从16px增大到18px */
 }
 
 .app-container {
@@ -245,7 +369,7 @@ const formatDate = (dateString) => {
 .app-header {
   background: #000000;
   color: white;
-  padding: 40px 20px;
+  padding: 50px 20px; /* 增大内边距 */
   flex-shrink: 0;
   
   .header-content {
@@ -253,30 +377,30 @@ const formatDate = (dateString) => {
   }
   
   .app-title {
-    font-size: 2.5rem; // 增大标题字体
+    font-size: 3rem; /* 从2.5rem增大到3rem */
     font-weight: 600;
     margin: 0;
     display: flex;
     align-items: center;
     justify-content: center;
-    gap: 12px;
+    gap: 15px; /* 增大间距 */
     
     .el-icon {
-      font-size: 2.2rem; // 增大图标
+      font-size: 2.8rem; /* 从2.2rem增大到2.8rem */
     }
   }
   
   .app-subtitle {
     color: rgba(255, 255, 255, 0.7);
-    margin: 12px 0 0;
-    font-size: 1.2rem; // 增大副标题字体
+    margin: 15px 0 0; /* 增大间距 */
+    font-size: 1.4rem; /* 从1.2rem增大到1.4rem */
     font-weight: 400;
   }
 }
 
 .app-main {
   flex: 1;
-  padding: 0 20px 20px;
+  padding: 0 25px 25px; /* 增大内边距 */
   display: flex;
   flex-direction: column;
   min-height: 0;
@@ -285,8 +409,8 @@ const formatDate = (dateString) => {
 .todo-card {
   background: #ffffff;
   border: 1px solid #e0e0e0;
-  border-radius: 12px; // 增大圆角
-  margin-top: -20px;
+  border-radius: 15px; /* 增大圆角 */
+  margin-top: -25px; /* 调整位置 */
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
   display: flex;
   flex-direction: column;
@@ -295,7 +419,7 @@ const formatDate = (dateString) => {
 }
 
 .stats-section {
-  padding: 30px 24px 25px; // 增大内边距
+  padding: 35px 28px 30px; /* 增大内边距 */
   border-bottom: 1px solid #f0f0f0;
   flex-shrink: 0;
 }
@@ -303,14 +427,14 @@ const formatDate = (dateString) => {
 .stats-grid {
   display: grid;
   grid-template-columns: 1fr 1fr 1fr;
-  gap: 20px; // 增大间距
+  gap: 25px; /* 增大间距 */
 }
 
 .stat-item {
   text-align: center;
   
   .stat-number {
-    font-size: 2.5rem; // 增大统计数字
+    font-size: 3rem; /* 从2.5rem增大到3rem */
     font-weight: 700;
     color: #000000;
     
@@ -324,35 +448,37 @@ const formatDate = (dateString) => {
   }
   
   .stat-label {
-    font-size: 1.1rem; // 增大标签字体
+    font-size: 1.3rem; /* 从1.1rem增大到1.3rem */
     color: #666666;
-    margin-top: 8px;
+    margin-top: 12px; /* 增大间距 */
     font-weight: 500;
   }
 }
 
 .filter-section {
-  padding: 25px 24px; // 增大内边距
+  padding: 30px 28px; /* 增大内边距 */
   border-bottom: 1px solid #f0f0f0;
   flex-shrink: 0;
 }
 
-.filter-row {
-  display: grid;
-  grid-template-columns: 1fr auto auto;
-  gap: 15px; // 增大间距
-  align-items: center;
+.filter-controls {
+  .filter-row {
+    display: grid;
+    grid-template-columns: 1fr auto auto auto auto;
+    gap: 15px; /* 增大间距 */
+    align-items: center;
+  }
 }
 
 .search-input,
 .filter-select,
 .clear-btn {
-  height: 44px; // 增大高度
-  font-size: 1.1rem; // 增大字体
+  height: 50px; /* 从44px增大到50px */
+  font-size: 1.3rem; /* 从1.1rem增大到1.3rem */
 }
 
 .add-section {
-  padding: 25px 24px; // 增大内边距
+  padding: 30px 28px; /* 增大内边距 */
   border-bottom: 1px solid #f0f0f0;
   flex-shrink: 0;
 }
@@ -360,33 +486,48 @@ const formatDate = (dateString) => {
 .add-form {
   display: flex;
   flex-direction: column;
-  gap: 15px; // 增大间距
+  gap: 20px; /* 增大间距 */
+}
+
+.form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* 增大间距 */
+}
+
+.form-options {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 15px; /* 增大间距 */
+  align-items: center;
 }
 
 .title-input,
-.desc-input {
-  font-size: 1.1rem; // 增大字体
+.desc-input,
+.option-select,
+.date-picker {
+  font-size: 1.3rem; /* 从1.1rem增大到1.3rem */
   
   :deep(.el-input__inner) {
     border-color: #e0e0e0;
-    font-size: 1.1rem; // 增大输入框字体
-    height: 44px; // 增大高度
+    font-size: 1.3rem; /* 从1.1rem增大到1.3rem */
+    height: 50px; /* 从44px增大到50px */
     
     &:focus {
       border-color: #000000;
     }
   }
-  
-  :deep(.el-textarea__inner) {
-    font-size: 1.1rem; // 增大文本区域字体
-    line-height: 1.5;
-  }
+}
+
+.desc-input :deep(.el-textarea__inner) {
+  font-size: 1.3rem; /* 从1.1rem增大到1.3rem */
+  line-height: 1.6;
 }
 
 .add-btn {
   background: #000000;
   border-color: #000000;
-  font-size: 1.1rem; // 增大按钮字体
+  font-size: 1.3rem; /* 从1.1rem增大到1.3rem */
   
   &:hover {
     background: #333333;
@@ -403,7 +544,7 @@ const formatDate = (dateString) => {
 }
 
 .empty-state {
-  padding: 60px 20px; // 增大内边距
+  padding: 80px 20px; /* 增大内边距 */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -417,7 +558,7 @@ const formatDate = (dateString) => {
 }
 
 .todo-item {
-  padding: 20px 24px; // 增大内边距
+  padding: 25px 28px; /* 增大内边距 */
   border-bottom: 1px solid #f5f5f5;
   transition: background-color 0.2s ease;
   
@@ -441,31 +582,47 @@ const formatDate = (dateString) => {
 .todo-content {
   display: flex;
   align-items: flex-start;
-  gap: 15px; // 增大间距
+  gap: 20px; /* 增大间距 */
 }
 
 .todo-checkbox {
-  margin-top: 4px;
+  margin-top: 6px; /* 增大间距 */
   
   :deep(.el-checkbox__input.is-checked .el-checkbox__inner) {
     background: #000000;
     border-color: #000000;
   }
   
-  :deep(.el-checkbox__label) {
-    font-size: 1.1rem; // 增大复选框标签字体
+  :deep(.el-checkbox__inner) {
+    width: 22px; /* 增大复选框大小 */
+    height: 22px;
+  }
+  
+  :deep(.el-checkbox__inner::after) {
+    height: 10px; /* 增大勾选标记 */
+    left: 7px;
+    top: 3px;
+    width: 6px;
   }
 }
 
 .todo-text {
   flex: 1;
   
+  .todo-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px; /* 增大间距 */
+    gap: 15px; /* 增大间距 */
+  }
+  
   .todo-title {
-    font-size: 1.2rem; // 增大任务标题
+    font-size: 1.4rem; /* 从1.2rem增大到1.4rem */
     font-weight: 500;
     color: #000000;
-    line-height: 1.5;
-    margin-bottom: 6px;
+    line-height: 1.6;
+    flex: 1;
     
     &.completed {
       text-decoration: line-through;
@@ -473,16 +630,45 @@ const formatDate = (dateString) => {
     }
   }
   
+  .todo-badges {
+    display: flex;
+    gap: 12px; /* 增大间距 */
+    flex-shrink: 0;
+  }
+  
+  .category-badge {
+    padding: 6px 12px; /* 增大内边距 */
+    border-radius: 6px; /* 增大圆角 */
+    font-size: 0.9rem; /* 从0.75rem增大到0.9rem */
+    color: white;
+    font-weight: 500;
+  }
+  
+  .priority-badge {
+    padding: 6px 12px; /* 增大内边距 */
+    border-radius: 6px; /* 增大圆角 */
+    font-size: 0.9rem; /* 从0.75rem增大到0.9rem */
+    font-weight: 500;
+    border: 1px solid currentColor;
+  }
+  
   .todo-description {
-    font-size: 1rem; // 增大描述字体
+    font-size: 1.2rem; /* 从1rem增大到1.2rem */
     color: #666666;
-    line-height: 1.5;
-    margin-bottom: 6px;
+    line-height: 1.6;
+    margin-bottom: 12px; /* 增大间距 */
   }
   
   .todo-meta {
-    font-size: 0.9rem; // 增大元信息字体
+    font-size: 1rem; /* 从0.85rem增大到1rem */
     color: #999999;
+    display: flex;
+    gap: 20px; /* 增大间距 */
+    
+    .due-date {
+      color: #FF6B6B;
+      font-weight: 500;
+    }
   }
 }
 
@@ -497,85 +683,104 @@ const formatDate = (dateString) => {
 
 .delete-btn {
   color: #666666;
-  font-size: 1.2rem; // 增大删除按钮图标
+  font-size: 1.4rem; /* 从1.2rem增大到1.4rem */
   
   &:hover {
     color: #ff4d4f;
   }
 }
 
-// 滚动条样式
 .todo-list::-webkit-scrollbar {
-  width: 8px; // 增大滚动条宽度
+  width: 10px; /* 增大滚动条宽度 */
 }
 
 .todo-list::-webkit-scrollbar-track {
   background: #f1f1f1;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .todo-list::-webkit-scrollbar-thumb {
   background: #c1c1c1;
-  border-radius: 4px;
+  border-radius: 5px;
 }
 
 .todo-list::-webkit-scrollbar-thumb:hover {
   background: #a8a8a8;
 }
 
-// 响应式设计
+@media (max-width: 1200px) {
+  .filter-controls .filter-row {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
 @media (max-width: 768px) {
   .app-main {
-    padding: 0 15px 15px;
+    padding: 0 20px 20px;
   }
   
-  .filter-row {
+  .filter-controls .filter-row {
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  
+  .form-options {
     grid-template-columns: 1fr;
     gap: 12px;
   }
   
   .stats-grid {
-    gap: 15px;
+    gap: 20px;
   }
   
   .stat-item .stat-number {
-    font-size: 2rem;
+    font-size: 2.5rem;
   }
   
   .todo-item {
-    padding: 18px 20px;
+    padding: 22px 24px;
+  }
+  
+  .todo-header {
+    flex-direction: column;
+    align-items: flex-start !important;
+    gap: 10px !important;
+  }
+  
+  .todo-badges {
+    align-self: flex-start;
   }
 }
 
 @media (max-width: 480px) {
   .app-header {
-    padding: 30px 15px;
+    padding: 40px 15px;
   }
   
   .app-title {
-    font-size: 2rem;
+    font-size: 2.5rem;
   }
   
   .app-subtitle {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
   
   .stats-section,
   .filter-section,
   .add-section {
-    padding: 20px;
+    padding: 25px;
   }
   
   .todo-item {
-    padding: 16px;
+    padding: 20px;
   }
   
   .stat-item .stat-number {
-    font-size: 1.8rem;
+    font-size: 2.2rem;
   }
   
   .stat-item .stat-label {
-    font-size: 1rem;
+    font-size: 1.2rem;
   }
 }
 </style>
