@@ -10,13 +10,6 @@ npm install
 bash
 npm run dev
 
-### 构建生产版本：
-bash
-npm run build
-
-### 预览生产构建：
-bash
-npm preview
 
 ### 环境要求
 Node.js: ^20.19.0 || >=22.12.0
