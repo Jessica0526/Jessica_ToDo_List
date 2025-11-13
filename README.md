@@ -1,38 +1,24 @@
-# .
+### TODO List 待办事项管理系统​
+一款基于 Vue 3 + Pinia + Element Plus 开发的现代化待办事项管理应用，支持任务添加、筛选、排序、统计等核心功能，数据本地持久化存储。
 
-This template should help get you started developing with Vue 3 in Vite.
+## 运行方式
+# 安装依赖：
 
-## Recommended IDE Setup
-
-[VS Code](https://code.visualstudio.com/) + [Vue (Official)](https://marketplace.visualstudio.com/items?itemName=Vue.volar) (and disable Vetur).
-
-## Recommended Browser Setup
-
-- Chromium-based browsers (Chrome, Edge, Brave, etc.):
-  - [Vue.js devtools](https://chromewebstore.google.com/detail/vuejs-devtools/nhdogjmejiglipccpnnnanhbledajbpd) 
-  - [Turn on Custom Object Formatter in Chrome DevTools](http://bit.ly/object-formatters)
-- Firefox:
-  - [Vue.js devtools](https://addons.mozilla.org/en-US/firefox/addon/vue-js-devtools/)
-  - [Turn on Custom Object Formatter in Firefox DevTools](https://fxdx.dev/firefox-devtools-custom-object-formatters/)
-
-## Customize configuration
-
-See [Vite Configuration Reference](https://vite.dev/config/).
-
-## Project Setup
-
-```sh
+bash
 npm install
-```
+# 启动开发服务器：
 
-### Compile and Hot-Reload for Development
-
-```sh
+bash
 npm run dev
-```
+# 构建生产版本：
 
-### Compile and Minify for Production
-
-```sh
+bash
 npm run build
-```
+# 预览生产构建：
+
+bash
+npm preview
+# 环境要求
+Node.js: ^20.19.0 || >=22.12.0
+
+现代浏览器（支持 ES6+）
